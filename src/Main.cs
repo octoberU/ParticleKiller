@@ -1,52 +1,53 @@
 using MelonLoader;
 using Harmony;
+using ParticleKiller;
+using System;
+using UnityEngine;
 
-namespace AudicaModding
+[assembly: MelonGame("Harmonix Music Systems, Inc.", "Audica")]
+[assembly: MelonInfo(typeof(ParticleKillerMod), "ParticleKiller", "0.1.1", "octo", "https://github.com/octoberU/ParticleKiller")]
+
+public class ParticleKillerMod : MelonMod
 {
-    public class AudicaMod : MelonMod
+    public override void OnApplicationStart()
     {
-        static public int particleCount;
-        static public bool killCPUParticles;
-        public static class BuildInfo
-        {
-            public const string Name = "ParticleKiller";  // Name of the Mod.  (MUST BE SET)
-            public const string Author = "octo"; // Author of the Mod.  (Set as null if none)
-            public const string Company = null; // Company that made the Mod.  (Set as null if none)
-            public const string Version = "0.1.0"; // Version of the Mod.  (MUST BE SET)
-            public const string DownloadLink = null; // Download Link for the Mod.  (Set as null if none)
-        }
+        Config.RegisterConfig();
+    }
 
-        public override void OnApplicationStart()
-        {
-            var i = HarmonyInstance.Create("ParticleKiller");
-            Hooks.ApplyHooks(i);
-        }
+    public override void OnModSettingsApplied()
+    {
+        Config.OnModSettingsApplied();
+    }
 
-        public override void OnLevelWasLoaded(int level)
+    [HarmonyPatch(typeof(UGPUEmitter), "Emit", new Type[] { typeof(int), typeof(bool) })]
+    private static class ParticleEmmision
+    {
+        private static void Prefix(UGPUEmitter __instance, ref int count, bool immediate)
         {
-            if (!ModPrefs.HasKey("ParticleKiller", "GPUParticlesCount"))
-            {
-                CreateConfig();
-            }
-            else
-            {
-                LoadConfig();
-            }
+            if (!Config.Enabled) return;
+            count = Config.ParticleCount;
         }
+    }
 
-        private void CreateConfig()
+    [HarmonyPatch(typeof(UGPUEmitter), "EmitBurst", new Type[] { typeof(int) })]
+    private static class ParticleEmmisionBurst
+    {
+        private static void Prefix(UGPUEmitter __instance, ref int count)
         {
-            ModPrefs.RegisterPrefInt("ParticleKiller", "GPUParticlesCount", 0);
-            ModPrefs.RegisterPrefBool("ParticleKiller", "KillCPUParticles", true);
+            if (!Config.Enabled) return;
+            count = Config.ParticleCount;
         }
-        private void LoadConfig()
+    }
+
+    [HarmonyPatch(typeof(ParticlePool), "Play", new Type[] { typeof(Vector3), typeof(Quaternion), typeof(float) })]
+    private static class CPUParticleEmmisionNoParams
+    {
+        private static bool Prefix(ParticlePool __instance)
         {
-            particleCount = ModPrefs.GetInt("ParticleKiller", "GPUParticlesCount");
-            killCPUParticles = ModPrefs.GetBool("ParticleKiller", "KillCPUParticles");
-            MelonModLogger.Log("Loaded config!: " + particleCount.ToString() + ", " + killCPUParticles.ToString());
+            if (!Config.Enabled) return true;
+            if (Config.KillCPUParticles) return false;
+            else return true;
         }
     }
 }
-
-
 
