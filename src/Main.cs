@@ -3,12 +3,17 @@ using Harmony;
 using ParticleKiller;
 using System;
 using UnityEngine;
+using System.Reflection;
 
+[assembly: AssemblyVersion(ParticleKillerMod.VERSION)]
+[assembly: AssemblyFileVersion(ParticleKillerMod.VERSION)]
 [assembly: MelonGame("Harmonix Music Systems, Inc.", "Audica")]
-[assembly: MelonInfo(typeof(ParticleKillerMod), "ParticleKiller", "0.1.1", "octo", "https://github.com/octoberU/ParticleKiller")]
+[assembly: MelonInfo(typeof(ParticleKillerMod), "ParticleKiller", ParticleKillerMod.VERSION, "octo", "https://github.com/octoberU/ParticleKiller")]
+
 
 public class ParticleKillerMod : MelonMod
 {
+    public const string VERSION = "0.1.2";
     public override void OnApplicationStart()
     {
         Config.RegisterConfig();
